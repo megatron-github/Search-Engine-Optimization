@@ -26,7 +26,9 @@ class ImprovedTweetIndex:
     def __init__(self):
         self.tweeted_word_library = {}
 
-    def process_tweets(self, )
+    def process_tweets(self, list_of_timestamps_and_tweets: List[Tuple[str, int]]) -> None:
+        
+        pass
 
 class TweetIndex:
     # Starter code--please override
