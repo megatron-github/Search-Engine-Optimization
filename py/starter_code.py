@@ -6,30 +6,6 @@ import csv
 from typing import List, Tuple
 
 
-class ImprovedTweetIndex:
-    """
-    for each tweet, find the set of words used in the tweet
-    save each word to a dictionary such that
-        1. 
-        {
-            word: the tweets that has the word ranked by time stamps  
-        }
-
-    when process query, find the set of words wanted:
-        1. for each word in the query, find the 5 tweets ranked by times 
-        2. find the set of 5 tweets from all the tweets found
-        3. return the 5 tweets by time stamps
-
-        4. for query with logical operators
-            a. ...
-    """
-    def __init__(self):
-        self.tweeted_word_library = {}
-
-    def process_tweets(self, list_of_timestamps_and_tweets: List[Tuple[str, int]]) -> None:
-        
-        pass
-
 class TweetIndex:
     # Starter code--please override
     def __init__(self):
