@@ -3,10 +3,6 @@ import re
 import queue
 import json 
 
-from typing import List, Tuple
-
-
-
 class ImprovedTweetIndex:
     """ An improved search engine"""
 
@@ -14,7 +10,7 @@ class ImprovedTweetIndex:
         self.tweeted_word_library = {}
         self.words_set = set()
 
-    def process_tweets(self, list_of_timestamps_and_tweets: List[Tuple[str, int]]) -> None:
+    def process_tweets(self, list_of_timestamps_and_tweets):
         """
         Given a list of timestamps and tweet, for each tweet in the list, save all tweeted 
         words as key into a dictionary-based data structure. Each key will associate with a 
@@ -26,15 +22,11 @@ class ImprovedTweetIndex:
         for timestamp, tweet in list_of_timestamps_and_tweets:
             tweet_words = set(tweet.split(" "))
             for word in tweet_words:
-                if word.lower() in self.tweeted_word_library:
-                    self.tweeted_word_library[word][timestamp] = tweet.lower()
-                else:
-                    self.tweeted_word_library[word] = {timestamp: tweet.lower()}
+                try: self.tweeted_word_library[word.lower()]
+                except: self.tweeted_word_library[word.lower()] = {int(timestamp): tweet.lower()}
+                else: self.tweeted_word_library[word.lower()][int(timestamp)] = tweet.lower() 
 
-        json_object = json.dumps(self.tweeted_word_library, indent=2)
-        print(json_object)
-
-    def is_valid_query(self, query: str) -> Bool:
+    def is_valid_query(self, query):
         """
         Return True is query is Valid. Otherwise, False. 
 
@@ -53,7 +45,7 @@ class ImprovedTweetIndex:
         # check if there exists a word followed by !
 
 
-    def process_queries(self, query: str) -> Tuple[Queue, Dict]:
+    def process_queries(self, query):
         """
         Return a tuple consist of a queue (FIFO) containing instructional 
         strings on what kind of tweets should be searched and a dictionary to
@@ -75,7 +67,7 @@ class ImprovedTweetIndex:
         pass
 
 
-    def search(self, query: str) -> List[Tuple[str, int]]:
+    def search(self, query):
         """
         Given a query, for each word in the query, find five 
         different tweets with the highest timestamps.
@@ -112,10 +104,3 @@ if __name__ == "__main__":
             
     ti = ImprovedTweetIndex()
     ti.process_tweets(list_of_tweets)
-    # print(ti.list_of_tweets)
-    # assert ti.search("hello") == [('hello this is also neeva', 15)]
-    # assert ti.search("hello me") == [('hello not me', 14)]
-    # assert ti.search("hello bye") == [('hello bye', 3)]
-    # assert ti.search("hello this bob") == [('hello neeva this is bob', 11)]
-    # assert ti.search("notinanytweets") == []
-    # print("Success!")
