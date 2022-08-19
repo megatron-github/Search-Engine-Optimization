@@ -7,6 +7,7 @@ Engineers at Noovi have built their own search engine, and now it's time to add 
 1. They want searching to be faster on a large set of tweets.
 2. They want to return the top 5 most recent tweets instea of a single tweet.
 3. They want to be able to handle search operators like logical operators such as `& (AND)`, `| (OR)`, and `! (NOT)`, as well as grouping by parentheses `()`.
+4. Between each logical operators are words, not phrase.
 
 ## Background
 
@@ -18,9 +19,12 @@ The search engine object `TweetIndex` had two methods `search()` and `process_tw
 
 1. We assume that tweet timestamps are globally unique positive integers.
 2. Every two words in a tweets are seperated by a space character.
-3. TThere are no special characters beside 26 letters in the English alphabet and the space character.
-4. Beside the NOT operator `!` and parentheses `()`, all logical operators and words in query are seperated by a space character. 
-6. The OR operator `|` must be between an open `(` and a close `)` parenthese.
+3. There are no special characters beside 26 letters in the English alphabet and the space character in the tweets.
+4. Beside the NOT operator `!`, there is always a space character to seperate a logical operator and a word in query.
+5. Between each logical operators are words, not phrase.
+6. When AND and OR operator are included in the query, parentheses must also be included.
+7. All parentheses must be included correctly.
+8. Most recent tweets are toward the end of the tweets.csv
 
 ### Processing Tweets
 
