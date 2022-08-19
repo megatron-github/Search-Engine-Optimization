@@ -27,27 +27,27 @@ class ImprovedTweetIndex:
     """ An improved search engine"""
 
     def __init__(self):
-        self.tweeted_word_library = {}
-        self.words_set = set()
+        self.tweeted_words = {}
+        self.tweeted_time = {}
+        self.instructions = {}
 
     def process_tweets(self, list_of_timestamps_and_tweets):
         """
-        Given a list of timestamps and tweet, for each tweet in the list, save all tweeted 
-        words as key into a dictionary-based data structure. Each key will associate with a 
-        of tweets that contain the key. 
+        Given a list of timestamps and tweet, for each tweet in the list, 
+        save all tweeted words as key into a dictionary-based data structure. 
+        Each key will associate with a set of tweets that contain the key. 
 
-        :param list_of_timestamps_and_tweets: A list of tuples consisting of a timestamp 
-        and a tweet.
+        :param list_of_timestamps_and_tweets: A list of tuples consisting 
+        of a timestamp and a tweet.
         """
+
         for timestamp, tweet in list_of_timestamps_and_tweets:
             tweet_words = set(tweet.split(" "))
             for word in tweet_words:
-                try: self.tweeted_word_library[word.lower()]
-                except: self.tweeted_word_library[word.lower()] = {timestamp: tweet.lower()}
-                else: self.tweeted_word_library[word.lower()][timestamp] = tweet.lower() 
-
-        # json_obj = json.dumps(self.tweeted_word_library, indent=2)
-        # print(json_obj)
+                try: self.tweeted_words[word.lower()]
+                except: self.tweeted_words[word.lower()] = {tweet.lower()}
+                else: self.tweeted_words[word.lower()].add(tweet.lower()) 
+            self.tweeted_time[tweet.lower()] = timestamp
 
     def is_valid_query(self, query):
         """
@@ -85,15 +85,13 @@ class ImprovedTweetIndex:
         :param query: the given query string
         """
 
-        # print(query)
-        query = re.sub(r'\s\s*', ' ', query)
+        query = re.sub(r'\s\s+', ' ', query) # delete unwanted white spaces
         logical_exists = self.is_valid_query(query)
 
         if not logical_exists:
-            # print({'OP0': query.split(" ")})
-            return {'OP0': query.split(" ")}
+            self.instructions = {'op0': [None] + query.split(" ")}
+            return
 
-        instruction_set = {}
         operation = 0
         while True:
             try: 
@@ -101,15 +99,12 @@ class ImprovedTweetIndex:
                     instr = re.search(r"(?:\(|\(\s)(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)(?:\)|\s\))", query)
                 else:
                     instr = re.search(r"(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)", query)
-                instruction_set["OP" + str(operation)] = instr.groups()
-                query = query.replace(instr[0], "OP" + str(operation))
+                self.instructions["op" + str(operation)] = [instr[2], instr[1].lower(), instr[3].lower()]
+                query = query.replace(instr[0], "op" + str(operation))
                 operation += 1
             except:
                 break
-            
-        # json_obj = json.dumps(instruction_set, indent=2)
-        # print(json_obj)
-        return instruction_set
+        return
 
     def search(self, query):
         """
@@ -121,15 +116,31 @@ class ImprovedTweetIndex:
         ordered by highest timestamp tweets first. 
         If no such tweet exists, returns empty list.
         """
-        self.process_queries(query)
-        # query_words
-        # query_words = set(query.split(" "))
+        set_a = {(1, 'b'), (2, 'b'), (3, 'b'), (10, 'b'), (9, 'b')}
+        set_b = {(3, 'b'), (4, 'b'), (5, 'b'), (6, 'b')}
+        diff = set_a ^ set_b
+        union = set_a | set_b
+        intersection = set_a & set_b
+        # print(diff)
+        # print(union)
+        # print(intersection)
 
-        # result = []
-        # for word in query_words:
-        #     word.lower()
-        #     pass
-        # return result
+        # instr = re.search(r"(?:\(|\(\s)(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)(?:\)|\s\))", query)
+        # print(instr.groups())
+        # print(instr[0])
+        # self.process_queries(query)
+        # print(self.tweeted_word_library)
+        print(query)
+        self.process_queries(query)
+        json_obj = json.dumps(self.instructions, indent=2)
+        print(json_obj)
+
+
+        # # result = []
+        # # for word in query_words:
+        # #     word.lower()
+        # #     pass
+        # # return result
 
 
 
@@ -148,6 +159,6 @@ if __name__ == "__main__":
             list_of_tweets.append((timestamp, tweet))
             
     ti = ImprovedTweetIndex()
-    # ti.process_tweets(list_of_tweets)
+    ti.process_tweets(list_of_tweets)
     ti.search('Noovi & search & ((works & great) | (needs & improvement))')
     # ti.search('')
