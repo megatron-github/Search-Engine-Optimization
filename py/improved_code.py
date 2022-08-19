@@ -27,16 +27,31 @@ class ImprovedTweetIndex:
     """ An improved search engine"""
 
     def __init__(self):
-        self.tweeted_words = {}
-        self.tweeted_time = {}
+        self.__tweeted_words = dict()
+        self.__tweeted_time = dict()
+
+    def __process_tweets_helper(self, tweet):
+        """
+        Given a tweet, save all the tweeted words as key into a 
+        dictionary-based __tweeted_words. Each key will associate 
+        with a set of tweets that contain the key.
+        """
+
+        # for every word in the tweet
+        tweet_words = set(tweet.split(" "))
+        for word in tweet_words:
+            try: self.__tweeted_words[word.lower()]
+            # add the word to dict as key, save the tweet under that key
+            except: self.__tweeted_words[word.lower()] = {tweet.lower()}
+            else: self.__tweeted_words[word.lower()].add(tweet.lower()) 
 
     def process_tweets(self, list_of_timestamps_and_tweets):
         """
-        Given a list of timestamps and tweet, for each tweet in the list, 
-        save all tweeted words as key into a dictionary-based tweeted_words. 
-        Each key will associate with a set of tweets that contain the key. 
+        Given a list of timestamps and tweet, save all tweeted words as key 
+        into a dictionary-based __tweeted_words. Each key will associate with 
+        a set of tweets that contain the key. 
         
-        Make each tweet a key in tweeted_time, associate with each key is 
+        Make each tweet a key in __tweeted_time, associate with each key is 
         the timestamp of the tweet 
 
         :param list_of_timestamps_and_tweets: A list of tuples consisting 
@@ -44,15 +59,15 @@ class ImprovedTweetIndex:
         """
 
         for timestamp, tweet in list_of_timestamps_and_tweets:
-            tweet_words = set(tweet.split(" "))
-            # for every word in the tweet
-            for word in tweet_words:
-                try: self.tweeted_words[word.lower()]
-                # add the word to dict as key, save the tweet under that key
-                except: self.tweeted_words[word.lower()] = {tweet.lower()}
-                else: self.tweeted_words[word.lower()].add(tweet.lower()) 
-            # a dictionary with the tweet as key, save the time under that key
-            self.tweeted_time[tweet.lower()] = timestamp
+            try: self.__tweeted_time[tweet.lower()]
+            except:
+                self.__tweeted_time[tweet.lower()] = timestamp
+                self.__process_tweets_helper(tweet)
+            else:
+                if self.__tweeted_time[tweet.lower()] < timestamp:
+                    self.__tweeted_time[tweet.lower()] = timestamp
+            
+        self.__time_tweeted = {y: x for x, y in self.__tweeted_time.items()}
 
     def __is_valid_query(self, query):
         """
@@ -133,15 +148,59 @@ class ImprovedTweetIndex:
                 break
         return operations
 
+    def __set_operation(self, operator, set1, set2):
+        """
+        Perform set operation between two sets with given operator
+        :param operator: set operator
+        :param set1, set2: two sets to use for the operation
+        """
+        if operator == "!":
+            return set1 - set2
+        elif operator == "&":
+            return set1 & set2
+        return set1 | set2
+
+    def __process_query_word(self, query, instructions):
+        """
+        Return a list of sets of tweets and a set operator. 
+        For each query in instructions, match the set of tweets
+        that contain the query.
+
+        :param query: query words in the instructions
+        :param instructions: another dictionary of query words
+        """
+        for i in range(1, len(query)):
+            if not re.search('op', query[i]):
+                try:
+                    query[i] = self.__tweeted_words[query[i]]
+                except:
+                    query[i] = set()
+            else:
+                query[i] = instructions[query[i]]
+        return query
+
+
     def __search_helper(self, instructions):
         """
-        Use the set of instructions, find all the tweets that satisfied
-        the conditions in the instructions
+        Return all the tweets that satisfied the conditions in the 
+        instructions.
 
         :param instructions: a dictionary all queries
         """
-        for item in instructions:
-            print(instructions[item])
+
+        all_tweets = set(self.__tweeted_time.keys())
+        results = set()
+        for stage in instructions:
+            log_op = instructions[stage][0]
+            working_sets = self.__process_query_word(instructions[stage], 
+                                                     instructions)
+            # print(working_sets)
+            if len(working_sets) <= 2:
+                instructions[stage] = self.__set_operation(log_op, all_tweets, working_sets[1])
+            else:
+                instructions[stage] = self.__set_operation(log_op, working_sets[1], working_sets[2])
+        return instructions['op' + str(len(instructions) - 1)]
+
 
     def search(self, query):
         """
@@ -153,28 +212,13 @@ class ImprovedTweetIndex:
         ordered by highest timestamp tweets first. 
         If no such tweet exists, returns empty list.
         """
-        set_a = {(1, 'b'), (2, 'b'), (3, 'b'), (10, 'b'), (9, 'b')}
-        set_b = {(3, 'b'), (4, 'b'), (5, 'b'), (6, 'b')}
-        diff = set_a ^ set_b
-        union = set_a | set_b
-        intersection = set_a & set_b
 
-        print(query)
+        # print(query)
+        recent_five = []
+        recent_time = []
         instructions = self.__process_queries(query)
         found_tweets = self.__search_helper(instructions)
-        print()
-
-
-        # json_obj = json.dumps(instructions, indent=2)
-        # print(json_obj)
-
-
-        # # result = []
-        # # for word in query_words:
-        # #     word.lower()
-        # #     pass
-        # # return result
-
+       
 
 
 if __name__ == "__main__":
@@ -190,12 +234,12 @@ if __name__ == "__main__":
             timestamp = int(row[0])
             tweet = str(row[1])
             list_of_tweets.append((timestamp, tweet))
-            
+    # print(list_of_tweets)
     ti = ImprovedTweetIndex()
     ti.process_tweets(list_of_tweets)
-    ti.search('hello world')
-    ti.search('Noovi & search & ((works & great) | !(needs & improvement))')
-    ti.search('Noovi & search & !works & great')
-    ti.search('Noovi & (!great | !fast)')
-    # ti.search('Noovi | mine !Google | his Yahoo')
-    ti.search('')
+    # ti.search('hello world')
+    ti.search('Neeva & search & ((works | stuff) | !(not & world))')
+    # ti.search('Neeva & !search & stuffs & great')
+    # ti.search('Neeva & !(not | world)')
+    # ti.search('Neeva | mine !Google | his Yahoo')
+    # ti.search('')
