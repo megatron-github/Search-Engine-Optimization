@@ -121,9 +121,7 @@ class ImprovedTweetIndex:
         diff = set_a ^ set_b
         union = set_a | set_b
         intersection = set_a & set_b
-        # print(diff)
-        # print(union)
-        # print(intersection)
+
 
         # instr = re.search(r"(?:\(|\(\s)(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)(?:\)|\s\))", query)
         # print(instr.groups())
