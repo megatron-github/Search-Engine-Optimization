@@ -29,13 +29,15 @@ class ImprovedTweetIndex:
     def __init__(self):
         self.tweeted_words = {}
         self.tweeted_time = {}
-        self.instructions = {}
 
     def process_tweets(self, list_of_timestamps_and_tweets):
         """
         Given a list of timestamps and tweet, for each tweet in the list, 
-        save all tweeted words as key into a dictionary-based data structure. 
+        save all tweeted words as key into a dictionary-based tweeted_words. 
         Each key will associate with a set of tweets that contain the key. 
+        
+        Make each tweet a key in tweeted_time, associate with each key is 
+        the timestamp of the tweet 
 
         :param list_of_timestamps_and_tweets: A list of tuples consisting 
         of a timestamp and a tweet.
@@ -43,68 +45,103 @@ class ImprovedTweetIndex:
 
         for timestamp, tweet in list_of_timestamps_and_tweets:
             tweet_words = set(tweet.split(" "))
+            # for every word in the tweet
             for word in tweet_words:
                 try: self.tweeted_words[word.lower()]
+                # add the word to dict as key, save the tweet under that key
                 except: self.tweeted_words[word.lower()] = {tweet.lower()}
                 else: self.tweeted_words[word.lower()].add(tweet.lower()) 
+            # a dictionary with the tweet as key, save the time under that key
             self.tweeted_time[tweet.lower()] = timestamp
 
-    def is_valid_query(self, query):
+    def __is_valid_query(self, query):
         """
         If query is Valid, return True if logical operator exist, False otherwise.
         If query is not Valid, raise Exception. 
 
         :param query: the given query string
         """
-        logical_exists = True
         # if logical operators exists
-        if re.search(r'[\&\|]', query):
-            # no: &word or |word or word& or word| or a!b
-            if re.search(r'[\&\|]\w+|\w+[\&\|]|\w!\w', query): 
-                errors(query)
-            # yes: ( ) must exists
-            if not re.search(r'[\(\)]', query):
-                errors(query)
-            # check if the parenthesis system was input correctly
-            bracket_str = re.sub(r'[\!\&\|\w\d\s]', "", query)
-            if not valid_bracket_struct(bracket_str):
-                errors(query)
-        else:
-            logical_exists = False
-            # no: !word
-            if re.search(r'\!\w+', query):
-                errors(query)
-        return logical_exists
+        if not re.search(r'[\&\|\!]', query):
+            return False
+        # if logical operator exists
+        # no: &word or |word or word& or word| or a!b
+        if re.search(r'[\&\|]\w+|\w+[\&\|]|\w!\w', query): 
+            errors(query)
+        # yes: ( ) must exists if both AND and OR operators are found
+        if re.search(r'\&', query) and re.search(r'\|', query) \
+        and not re.search(r'[\(\)]', query):
+            errors(query)
+        # no: using multiple query words before logical operator, e.i, a b & c d
+        if re.search(r"\w+ (\!\w+|\w+) ([\|\&])", query) \
+        or re.search(r"([\|\&]) (\!\w+|\w+) (\!\w+|\w+)", query):
+            errors(query)
+        # check if the parenthesis system was input correctly
+        bracket_str = re.sub(r'[\!\&\|\w\d\s]', "", query)
+        if not valid_bracket_struct(bracket_str):
+            errors(query)
+        return True
 
-    def process_queries(self, query):
+    def __process_queries(self, query):
         """
-        Return a tuple consist of a queue (FIFO) containing instructional 
-        strings on what kind of tweets should be searched and a dictionary to
-        translate the instructional strings
+        Return the set of operations found in the query string. 
+        Dissect the query string into different operations, 
+        prioritize query with NOT operator, then query in parentheses. 
+        Suppose query A & (C | D).
+
+        A & operation 0 (for operation 0 = C | D)
+        operation 1     (for operation1 = A & operation 0)
+
+        Save each operation as 
+            
+        {op#: [logical operator, query word1, query word2]}. 
 
         :param query: the given query string
         """
 
         query = re.sub(r'\s\s+', ' ', query) # delete unwanted white spaces
-        logical_exists = self.is_valid_query(query)
+        logical_exists = self.__is_valid_query(query)
 
+        # query with no logical operator
         if not logical_exists:
-            self.instructions = {'op0': [None] + query.split(" ")}
-            return
+            return {'op0': ['&'] + query.split(" ")}
 
-        operation = 0
-        while True:
+        operations = {}
+        op_num = 0
+        instr = None
+        while logical_exists:
             try: 
-                if re.search(r"[\(\)]", query):
-                    instr = re.search(r"(?:\(|\(\s)(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)(?:\)|\s\))", query)
-                else:
-                    instr = re.search(r"(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)", query)
-                self.instructions["op" + str(operation)] = [instr[2], instr[1].lower(), instr[3].lower()]
-                query = query.replace(instr[0], "op" + str(operation))
-                operation += 1
+                # process the NOT operator first
+                instr = re.search(r'\!\w+', query)
+                if instr: operations["op" + str(op_num)] = ['!', instr[0][1:].lower()]
+
+                # process the query in parenthese as soon as possible
+                elif re.search(r"[\(\)]", query):
+                    instr = re.search(r"(?:\(|\(\s)(\w+) ([\|\&]) (\w+)(?:\)|\s\))", query)
+                    operations["op" + str(op_num)] = [instr[2], 
+                                                      instr[1].lower(), 
+                                                      instr[3].lower()]
+                else: # when all parenthese are gone, process left to right
+                    instr = re.search(r"(\w+) ([\|\&]) (\w+)", query)
+                    operations["op" + str(op_num)] = [instr[2], 
+                                                      instr[1].lower(), 
+                                                      instr[3].lower()]
+                # update query
+                query = query.replace(instr[0], "op" + str(op_num))
+                op_num += 1
             except:
                 break
-        return
+        return operations
+
+    def __search_helper(self, instructions):
+        """
+        Use the set of instructions, find all the tweets that satisfied
+        the conditions in the instructions
+
+        :param instructions: a dictionary all queries
+        """
+        for item in instructions:
+            print(instructions[item])
 
     def search(self, query):
         """
@@ -122,16 +159,14 @@ class ImprovedTweetIndex:
         union = set_a | set_b
         intersection = set_a & set_b
 
-
-        # instr = re.search(r"(?:\(|\(\s)(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)(?:\)|\s\))", query)
-        # print(instr.groups())
-        # print(instr[0])
-        # self.process_queries(query)
-        # print(self.tweeted_word_library)
         print(query)
-        self.process_queries(query)
-        json_obj = json.dumps(self.instructions, indent=2)
-        print(json_obj)
+        instructions = self.__process_queries(query)
+        found_tweets = self.__search_helper(instructions)
+        print()
+
+
+        # json_obj = json.dumps(instructions, indent=2)
+        # print(json_obj)
 
 
         # # result = []
@@ -158,5 +193,9 @@ if __name__ == "__main__":
             
     ti = ImprovedTweetIndex()
     ti.process_tweets(list_of_tweets)
-    ti.search('Noovi & search & ((works & great) | (needs & improvement))')
-    # ti.search('')
+    ti.search('hello world')
+    ti.search('Noovi & search & ((works & great) | !(needs & improvement))')
+    ti.search('Noovi & search & !works & great')
+    ti.search('Noovi & (!great | !fast)')
+    # ti.search('Noovi | mine !Google | his Yahoo')
+    ti.search('')
