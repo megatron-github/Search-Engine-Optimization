@@ -12,11 +12,10 @@ def valid_bracket_struct(struct):
     Return True if all open parentheses have their own close parentheses.
     Otherwise, return False
     """
-    # print(struct)
-    brackets = {'(': ')'}
+    brackets = {'(': ')', '[': ']', '{': '}'}
     stack = []
     for i in range(len(struct)):
-        if struct[i] == "(":
+        if struct[i] in "([{":
             stack.append(struct[i])
         else:
             if len(stack) == 0 or brackets[stack.pop()] != struct[i]:
@@ -36,14 +35,13 @@ class ImprovedTweetIndex:
         dictionary-based __tweeted_words. Each key will associate 
         with a set of tweets that contain the key.
         """
-
         # for every word in the tweet
         tweet_words = set(tweet.split(" "))
         for word in tweet_words:
-            try: self.__tweeted_words[word.lower()]
+            try: self.__tweeted_words[word]
             # add the word to dict as key, save the tweet under that key
-            except: self.__tweeted_words[word.lower()] = {tweet.lower()}
-            else: self.__tweeted_words[word.lower()].add(tweet.lower()) 
+            except: self.__tweeted_words[word] = {tweet}
+            else: self.__tweeted_words[word].add(tweet) 
 
     def process_tweets(self, list_of_timestamps_and_tweets):
         """
@@ -57,17 +55,17 @@ class ImprovedTweetIndex:
         :param list_of_timestamps_and_tweets: A list of tuples consisting 
         of a timestamp and a tweet.
         """
-
         for timestamp, tweet in list_of_timestamps_and_tweets:
-            try: self.__tweeted_time[tweet.lower()]
-            except:
-                self.__tweeted_time[tweet.lower()] = timestamp
-                self.__process_tweets_helper(tweet)
+            tweet = tweet.lower()
+            # check for repeated tweets
+            if tweet in self.__tweeted_time:
+                # save the new tweet if it is more recent
+                if self.__tweeted_time[tweet] < timestamp:
+                    self.__tweeted_time[tweet] = timestamp
             else:
-                if self.__tweeted_time[tweet.lower()] < timestamp:
-                    self.__tweeted_time[tweet.lower()] = timestamp
-            
-        self.__time_tweeted = {y: x for x, y in self.__tweeted_time.items()}
+                # save the new tweet, if never seen before
+                self.__tweeted_time[tweet] = timestamp
+                self.__process_tweets_helper(tweet)
 
     def __is_valid_query(self, query):
         """
@@ -76,9 +74,8 @@ class ImprovedTweetIndex:
 
         :param query: the given query string
         """
-        # if logical operators exists
-        if not re.search(r'[\&\|\!]', query):
-            return False
+        # if logical operators does not exist
+        if not re.search(r'[\&\|\!]', query): return False
         # if logical operator exists
         # no: &word or |word or word& or word| or a!b
         if re.search(r'[\&\|]\w+|\w+[\&\|]|\w!\w', query): 
@@ -87,7 +84,7 @@ class ImprovedTweetIndex:
         if re.search(r'\&', query) and re.search(r'\|', query) \
         and not re.search(r'[\(\)]', query):
             errors(query)
-        # no: using multiple query words before logical operator, e.i, a b & c d
+        # no: multiple query words before logical operator, e.i, a b & c d
         if re.search(r"\w+ (\!\w+|\w+) ([\|\&])", query) \
         or re.search(r"([\|\&]) (\!\w+|\w+) (\!\w+|\w+)", query):
             errors(query)
@@ -112,24 +109,25 @@ class ImprovedTweetIndex:
         {op#: [logical operator, query word1, query word2]}. 
 
         :param query: the given query string
+        :return: a dictionary-based set of operations dissected
+        from the query
         """
-
-        query = re.sub(r'\s\s+', ' ', query) # delete unwanted white spaces
+        # delete uneccessary white spaces
+        query = re.sub(r'\s\s+', ' ', query)
         logical_exists = self.__is_valid_query(query)
 
         # query with no logical operator
+        instr = None
         if not logical_exists:
-            return {'op0': ['&'] + query.split(" ")}
+            return {'op0': ['&'] + [part.lower() for part in query.split(" ")]}
 
         operations = {}
         op_num = 0
-        instr = None
         while logical_exists:
             try: 
                 # process the NOT operator first
                 instr = re.search(r'\!\w+', query)
                 if instr: operations["op" + str(op_num)] = ['!', instr[0][1:].lower()]
-
                 # process the query in parenthese as soon as possible
                 elif re.search(r"[\(\)]", query):
                     instr = re.search(r"(?:\(|\(\s)(\w+) ([\|\&]) (\w+)(?:\)|\s\))", query)
@@ -153,6 +151,7 @@ class ImprovedTweetIndex:
         Perform set operation between two sets with given operator
         :param operator: set operator
         :param set1, set2: two sets to use for the operation
+        :return: a set resulted from the operation on set1 using set2
         """
         if operator == "!":
             return set1 - set2
@@ -162,23 +161,27 @@ class ImprovedTweetIndex:
 
     def __process_query_word(self, query, instructions):
         """
-        Return a list of sets of tweets and a set operator. 
-        For each query in instructions, match the set of tweets
-        that contain the query.
+        Return the sets of tweets associated with the given queries
 
-        :param query: query words in the instructions
-        :param instructions: another dictionary of query words
+        :param query: a list represented a dissected section of 
+        the original query, 
+        represented as [logical operator, word1, word2]
+        :param instructions: the set of all instruction dissected
+        from the original query
+        :return: a list of sets of tweets that satisfied each query, 
+        represented as [logical operator, set1, set2]
         """
         for i in range(1, len(query)):
-            if not re.search('op', query[i]):
-                try:
-                    query[i] = self.__tweeted_words[query[i]]
-                except:
-                    query[i] = set()
-            else:
-                query[i] = instructions[query[i]]
+            # check if query is key word used to identify instruction
+            if not re.match(r'(op\d+)', query[i]):
+                # if not, check if the word was ever tweeted
+                try: self.__tweeted_words[query[i]]
+                # if never tweeted, return an empty set
+                except: query[i] = set()
+                else: query[i] = self.__tweeted_words[query[i]]
+            # if yes, return the instruction associated with the query
+            else: query[i] = instructions[query[i]]
         return query
-
 
     def __search_helper(self, instructions):
         """
@@ -186,21 +189,27 @@ class ImprovedTweetIndex:
         instructions.
 
         :param instructions: a dictionary all queries
+        :return: a set of tweeted words that satisfied the 
+        the requirement of the last instructions
+        If no such tweet exists, return empty list
         """
-
         all_tweets = set(self.__tweeted_time.keys())
         results = set()
+        # for each instruction
         for stage in instructions:
             log_op = instructions[stage][0]
-            working_sets = self.__process_query_word(instructions[stage], 
-                                                     instructions)
-            # print(working_sets)
+            # find the sets of tweets or instruction associated with
+            # the current instruction
+            working_sets = self.__process_query_word(instructions[stage], instructions)
+            # execute the instruction
             if len(working_sets) <= 2:
                 instructions[stage] = self.__set_operation(log_op, all_tweets, working_sets[1])
             else:
-                instructions[stage] = self.__set_operation(log_op, working_sets[1], working_sets[2])
+                final_set = working_sets[1]
+                for next_set in working_sets[2:]:
+                    final_set = self.__set_operation(log_op, final_set, next_set)
+                instructions[stage] = final_set
         return instructions['op' + str(len(instructions) - 1)]
-
 
     def search(self, query):
         """
@@ -208,22 +217,24 @@ class ImprovedTweetIndex:
         different tweets with the highest timestamps.
 
         :param query: the given query string
-        :return: a list of tuples of the form (tweet text, tweet timestamp), 
-        ordered by highest timestamp tweets first. 
+        :return: a list of ordered by highest timestamp tweets first. 
         If no such tweet exists, returns empty list.
         """
-
-        # print(query)
         recent_five = []
-        recent_time = []
         instructions = self.__process_queries(query)
         found_tweets = self.__search_helper(instructions)
-       
-
+        for tweet in found_tweets:
+            if len(recent_five) < 6:
+                recent_five.append(tweet)
+            else:
+                recent_five.append(tweet)
+                recent_five.sort(key = lambda x: self.__tweeted_time[x], reverse=True)
+                recent_five = recent_five[:-1]
+        return recent_five    
 
 if __name__ == "__main__":
     # A full list of tweets is available in data/tweets.csv for your use.
-    tweet_csv_filename = "../data/small.csv"
+    tweet_csv_filename = "../data/tweets.csv"
     list_of_tweets = []
     with open(tweet_csv_filename, "r") as f:
         csv_reader = csv.reader(f, delimiter=",")
@@ -237,8 +248,10 @@ if __name__ == "__main__":
     # print(list_of_tweets)
     ti = ImprovedTweetIndex()
     ti.process_tweets(list_of_tweets)
+    ti.search("Neeva & (people | stuffs)")
+    ti.search("Neeva people")
     # ti.search('hello world')
-    ti.search('Neeva & search & ((works | stuff) | !(not & world))')
+    # ti.search('Neeva & search & ((works | stuff) | !(not & world))')
     # ti.search('Neeva & !search & stuffs & great')
     # ti.search('Neeva & !(not | world)')
     # ti.search('Neeva | mine !Google | his Yahoo')
