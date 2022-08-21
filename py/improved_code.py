@@ -1,7 +1,5 @@
 import csv
 import re
-import queue
-import json 
 
 def errors(query):
     """Raise Exception"""
@@ -24,32 +22,31 @@ def valid_bracket_struct(struct):
     
 class ImprovedTweetIndex:
     """ An improved search engine"""
-
     def __init__(self):
-        self.__tweeted_words = dict()
-        self.__tweeted_time = dict()
+        self.tweeted_words = dict()
+        self.tweeted_times = dict()
 
     def __process_tweets_helper(self, tweet):
         """
         Given a tweet, save all the tweeted words as key into a 
-        dictionary-based __tweeted_words. Each key will associate 
+        dictionary-based tweeted_words. Each key will associate 
         with a set of tweets that contain the key.
         """
         # for every word in the tweet
         tweet_words = set(tweet.split(" "))
         for word in tweet_words:
-            try: self.__tweeted_words[word]
+            try: self.tweeted_words[word]
             # add the word to dict as key, save the tweet under that key
-            except: self.__tweeted_words[word] = {tweet}
-            else: self.__tweeted_words[word].add(tweet) 
+            except: self.tweeted_words[word] = {tweet}
+            else: self.tweeted_words[word].add(tweet) 
 
     def process_tweets(self, list_of_timestamps_and_tweets):
         """
         Given a list of timestamps and tweet, save all tweeted words as key 
-        into a dictionary-based __tweeted_words. Each key will associate with 
+        into a dictionary-based tweeted_words. Each key will associate with 
         a set of tweets that contain the key. 
         
-        Make each tweet a key in __tweeted_time, associate with each key is 
+        Make each tweet a key in tweeted_times, associate with each key is 
         the timestamp of the tweet 
 
         :param list_of_timestamps_and_tweets: A list of tuples consisting 
@@ -58,13 +55,13 @@ class ImprovedTweetIndex:
         for timestamp, tweet in list_of_timestamps_and_tweets:
             tweet = tweet.lower()
             # check for repeated tweets
-            if tweet in self.__tweeted_time:
+            if tweet in self.tweeted_times:
                 # save the new tweet if it is more recent
-                if self.__tweeted_time[tweet] < timestamp:
-                    self.__tweeted_time[tweet] = timestamp
+                if self.tweeted_times[tweet] < timestamp:
+                    self.tweeted_times[tweet] = timestamp
             else:
                 # save the new tweet, if never seen before
-                self.__tweeted_time[tweet] = timestamp
+                self.tweeted_times[tweet] = timestamp
                 self.__process_tweets_helper(tweet)
 
     def __is_valid_query(self, query):
@@ -76,9 +73,12 @@ class ImprovedTweetIndex:
         """
         # if logical operators does not exist
         if not re.search(r'[\&\|\!]', query): return False
-        # if logical operator exists
-        # no: &word or |word or word& or word| or a!b
-        if re.search(r'[\&\|]\w+|\w+[\&\|]|\w!\w', query): 
+        # if logical operator exists, query must have the format A Operator B
+        if re.search(r'[\&\|]', query) and \
+        not re.search(r"(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)", query):
+            errors(query)
+        # no: word! or word ! or ! word
+        if re.search(r'\w+\!|\w+ !|! \w+', query): 
             errors(query)
         # yes: ( ) must exists if both AND and OR operators are found
         if re.search(r'\&', query) and re.search(r'\|', query) \
@@ -94,7 +94,7 @@ class ImprovedTweetIndex:
             errors(query)
         return True
 
-    def __process_queries(self, query):
+    def process_queries(self, query):
         """
         Return the set of operations found in the query string. 
         Dissect the query string into different operations, 
@@ -119,31 +119,26 @@ class ImprovedTweetIndex:
         # query with no logical operator
         instr = None
         if not logical_exists:
-            return {'op0': ['&'] + [part.lower() for part in query.split(" ")]}
+            return {'op0': ['&'] + query.split(" ")}
 
         operations = {}
         op_num = 0
         while logical_exists:
-            try: 
-                # process the NOT operator first
-                instr = re.search(r'\!\w+', query)
-                if instr: operations["op" + str(op_num)] = ['!', instr[0][1:].lower()]
-                # process the query in parenthese as soon as possible
-                elif re.search(r"[\(\)]", query):
-                    instr = re.search(r"(?:\(|\(\s)(\w+) ([\|\&]) (\w+)(?:\)|\s\))", query)
-                    operations["op" + str(op_num)] = [instr[2], 
-                                                      instr[1].lower(), 
-                                                      instr[3].lower()]
-                else: # when all parenthese are gone, process left to right
-                    instr = re.search(r"(\w+) ([\|\&]) (\w+)", query)
-                    operations["op" + str(op_num)] = [instr[2], 
-                                                      instr[1].lower(), 
-                                                      instr[3].lower()]
-                # update query
-                query = query.replace(instr[0], "op" + str(op_num))
-                op_num += 1
-            except:
-                break
+            # process the NOT operator first
+            instr = re.search(r'\!\w+', query)
+            if instr: 
+                operations["op" + str(op_num)] = ['!', instr[0][1:]]
+            # process the query in parenthese as soon as possible
+            elif re.search(r"[\(\)]", query):
+                instr = re.search(r"(?:\(|\(\s)(\w+) ([\|\&]) (\w+)(?:\)|\s\))", query)
+                operations["op" + str(op_num)] = [instr[2], instr[1], instr[3]]
+            else: # when all parenthese are gone, process left to right
+                instr = re.search(r"(\w+) ([\|\&]) (\w+)", query)
+                if not instr: break
+                operations["op" + str(op_num)] = [instr[2], instr[1], instr[3]]
+            # update query
+            query = query.replace(instr[0], "op" + str(op_num))
+            op_num += 1
         return operations
 
     def __set_operation(self, operator, set1, set2):
@@ -175,10 +170,10 @@ class ImprovedTweetIndex:
             # check if query is key word used to identify instruction
             if not re.match(r'(op\d+)', query[i]):
                 # if not, check if the word was ever tweeted
-                try: self.__tweeted_words[query[i]]
+                try: self.tweeted_words[query[i]]
                 # if never tweeted, return an empty set
                 except: query[i] = set()
-                else: query[i] = self.__tweeted_words[query[i]]
+                else: query[i] = self.tweeted_words[query[i]]
             # if yes, return the instruction associated with the query
             else: query[i] = instructions[query[i]]
         return query
@@ -193,7 +188,8 @@ class ImprovedTweetIndex:
         the requirement of the last instructions
         If no such tweet exists, return empty list
         """
-        all_tweets = set(self.__tweeted_time.keys())
+        if not instructions: return []
+        all_tweets = set(self.tweeted_times.keys())
         results = set()
         # for each instruction
         for stage in instructions:
@@ -221,16 +217,19 @@ class ImprovedTweetIndex:
         If no such tweet exists, returns empty list.
         """
         recent_five = []
-        instructions = self.__process_queries(query)
-        found_tweets = self.__search_helper(instructions)
-        for tweet in found_tweets:
-            if len(recent_five) < 6:
-                recent_five.append(tweet)
-            else:
-                recent_five.append(tweet)
-                recent_five.sort(key = lambda x: self.__tweeted_time[x], reverse=True)
-                recent_five = recent_five[:-1]
-        return recent_five    
+        instructions = self.process_queries(query.lower())
+        found_tweets = list(self.__search_helper(instructions))
+        found_tweets.sort(key = lambda x: self.tweeted_times[x], reverse=True)
+        # print(found_tweets[:5])
+        return found_tweets[:5]
+        # for tweet in found_tweets:
+        #     if len(recent_five) < 6:
+        #         recent_five.append(tweet)
+        #     else:
+        #         recent_five.append(tweet)
+        #         recent_five.sort(key = lambda x: self.tweeted_times[x], reverse=True)
+        #         recent_five = recent_five[:-1]
+        # return recent_five    
 
 if __name__ == "__main__":
     # A full list of tweets is available in data/tweets.csv for your use.
@@ -250,9 +249,9 @@ if __name__ == "__main__":
     ti.process_tweets(list_of_tweets)
     ti.search("Neeva & (people | stuffs)")
     ti.search("Neeva people")
-    # ti.search('hello world')
-    # ti.search('Neeva & search & ((works | stuff) | !(not & world))')
-    # ti.search('Neeva & !search & stuffs & great')
-    # ti.search('Neeva & !(not | world)')
+    ti.search('hello world')
+    ti.search('Neeva & search & ((works | stuff) | !(not & world))')
+    ti.search('Neeva & stuffs')
+    ti.search('Neeva & !(not | world)')
     # ti.search('Neeva | mine !Google | his Yahoo')
     # ti.search('')

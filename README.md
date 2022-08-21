@@ -21,10 +21,10 @@ The search engine object `TweetIndex` had two methods `search()` and `process_tw
 2. Every two words in a tweets are seperated by a space character.
 3. There are no special characters beside 26 letters in the English alphabet and the space character in the tweets.
 4. Beside the NOT operator `!`, there is always a space character to seperate a logical operator and a word in query.
-5. When logical operator exists, words in the query must be seperated by a
-logical operator.
+5. When logical operator exists, every two words in the query must be seperated by a logical operator.
 6. When AND and OR operator are included in the query, parentheses must also be included.
-7. All parentheses must be included correctly.
+7. All parentheses must be included and formatted correctly.
+8. A tweet will never have logical operators !, &, |.
 
 ### Processing Tweets
 
