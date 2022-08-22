@@ -117,27 +117,27 @@ class ImprovedTweetIndex:
         logical_exists = self.__is_valid_query(query)
 
         # query with no logical operator
-        instr = None
         if not logical_exists:
             return {'op0': ['&'] + query.split(" ")}
 
+        operation = None
         operations = {}
         op_num = 0
         while logical_exists:
             # process the NOT operator first
-            instr = re.search(r'\!\w+', query)
-            if instr: 
-                operations["op" + str(op_num)] = ['!', instr[0][1:]]
+            operation = re.search(r'\!\w+', query)
+            if operation: 
+                operations["op" + str(op_num)] = ['!', operation[0][1:]]
             # process the query in parenthese as soon as possible
             elif re.search(r"[\(\)]", query):
-                instr = re.search(r"(?:\(|\(\s)(\w+) ([\|\&]) (\w+)(?:\)|\s\))", query)
-                operations["op" + str(op_num)] = [instr[2], instr[1], instr[3]]
+                operation = re.search(r"(?:\(|\(\s)(\w+) ([\|\&]) (\w+)(?:\)|\s\))", query)
+                operations["op" + str(op_num)] = [operation[2], operation[1], operation[3]]
             else: # when all parenthese are gone, process left to right
-                instr = re.search(r"(\w+) ([\|\&]) (\w+)", query)
-                if not instr: break
-                operations["op" + str(op_num)] = [instr[2], instr[1], instr[3]]
+                operation = re.search(r"(\w+) ([\|\&]) (\w+)", query)
+                if not operation: break
+                operations["op" + str(op_num)] = [operation[2], operation[1], operation[3]]
             # update query
-            query = query.replace(instr[0], "op" + str(op_num))
+            query = query.replace(operation[0], "op" + str(op_num))
             op_num += 1
         return operations
 
@@ -178,7 +178,7 @@ class ImprovedTweetIndex:
             else: query[i] = instructions[query[i]]
         return query
 
-    def __search_helper(self, instructions):
+    def search_helper(self, instructions):
         """
         Return all the tweets that satisfied the conditions in the 
         instructions.
@@ -193,6 +193,7 @@ class ImprovedTweetIndex:
         results = set()
         # for each instruction
         for stage in instructions:
+            # print(instructions[stage])
             log_op = instructions[stage][0]
             # find the sets of tweets or instruction associated with
             # the current instruction
@@ -216,21 +217,11 @@ class ImprovedTweetIndex:
         :return: a list of ordered by highest timestamp tweets first. 
         If no such tweet exists, returns empty list.
         """
-        recent_five = []
         instructions = self.process_queries(query.lower())
-        found_tweets = list(self.__search_helper(instructions))
+        found_tweets = list(self.search_helper(instructions))
         found_tweets.sort(key = lambda x: self.tweeted_times[x], reverse=True)
-        # print(found_tweets[:5])
-        return found_tweets[:5]
-        # for tweet in found_tweets:
-        #     if len(recent_five) < 6:
-        #         recent_five.append(tweet)
-        #     else:
-        #         recent_five.append(tweet)
-        #         recent_five.sort(key = lambda x: self.tweeted_times[x], reverse=True)
-        #         recent_five = recent_five[:-1]
-        # return recent_five    
-
+        return found_tweets[:6]
+        
 if __name__ == "__main__":
     # A full list of tweets is available in data/tweets.csv for your use.
     tweet_csv_filename = "../data/tweets.csv"
@@ -244,14 +235,14 @@ if __name__ == "__main__":
             timestamp = int(row[0])
             tweet = str(row[1])
             list_of_tweets.append((timestamp, tweet))
-    # print(list_of_tweets)
-    ti = ImprovedTweetIndex()
-    ti.process_tweets(list_of_tweets)
-    ti.search("Neeva & (people | stuffs)")
-    ti.search("Neeva people")
-    ti.search('hello world')
-    ti.search('Neeva & search & ((works | stuff) | !(not & world))')
-    ti.search('Neeva & stuffs')
-    ti.search('Neeva & !(not | world)')
-    # ti.search('Neeva | mine !Google | his Yahoo')
+            
+    # ti = ImprovedTweetIndex()
+    # ti.process_tweets(list_of_tweets)
+    # print(ti.search("Neeva & (people | search)"))
+    # ti.search("Neeva people")
+    # ti.search('hello world')
+    # ti.search('Neeva & search & ((works | stuff) | !(not & world))')
+    # ti.search('Neeva & stuffs')
+    # ti.search('Neeva & !(not | world)')
     # ti.search('')
+

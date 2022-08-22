@@ -2,6 +2,7 @@ from improved_code import *
 from starter_code import *
 import random
 import time
+import timeit
 
 def test_processTweets(list_of_tweets, engine):
     """
@@ -10,7 +11,7 @@ def test_processTweets(list_of_tweets, engine):
     :param list of tweets: list of tweets to process
     :param engine: tweets processor to test
     """
-    print("--Testing Process Tweets")  
+    print("*Testing Process Tweets")  
     try: engine.process_tweets(list_of_tweets)
     except: print("--Failed to run correctly")
     else: print("--Successfully Run")
@@ -38,7 +39,7 @@ def test_processTweets(list_of_tweets, engine):
             assert tweet in keys
             assert engine.tweeted_times[tweet] >= timestamp
     except: print(f"--Errors in Test {test}")
-    else: print("--Process Tweets Successfully")
+    else: print("--Successfully Process Tweets")
     
 def test_BadQueries(engine):
     """
@@ -135,118 +136,100 @@ def test_processQueries(list_of_tweets, engine):
     :param list of tweets: list of tweets to process
     :param engine: queries processor to test
     """
-    print("--Testing Process Query")
+    print("*Testing Process Query")
     engine.process_tweets(list_of_tweets)
+    try: engine.process_queries("a & (b | c)")
+    except: print("--Failed to run correctly")
+    else: print("--Successfully Run")
     test_BadQueries(engine)
+
+    good = 0
+    try: engine.process_queries("") == {"op0": ["&", ""]}
+    except: print("--Good Query Failed to Process: EmptyString")
+    else: good += 1
+
+    try: engine.process_queries("notinanytweets") == {"op0": ["&", "notinanytweets"]}
+    except: print("--Good Query Failed to Process: notinanytweets")
+    else: good += 1
     
-        #     queries = [
-#                'hello      bob', 'ab c', '',
-#                'Noovi & search & (  (works & great) | (needs & improvement))',
-#                'Noovi & is & (interesting | exciting ) & !boring',
-#                '(interesting | exciting ) & ! boring',
-#                'boring!',
-#                'Noovi & is & ( interesting | exciting    )',
-#                ]
+    try: engine.process_queries("a      b") == {"op0": ["&", "a", "b"]}
+    except: print("--Good Query  Failed to Process: a      b")
+    else: good += 1
+    
+    try: engine.process_queries("a & b &") == {"op0": ["&", "a", "b"]}
+    except: print("--Good Query Failed to Process: a & b &")
+    else: good += 1
+    
+    try: engine.process_queries("!a") == {"op0": ["!", "a"]}
+    except: print("--Good Query Failed to Process: !a")
+    else: good += 1
+    
+    try: engine.process_queries("a & !(b | c)") == {"op0": ["|", "b", "c"],
+                                                    "op1": ["!", "op0"],
+                                                    "op2": ["&", "a", "op1"]}
+    except: print("--Good Query Failed to Process: a & !(b | c)")
+    else: good += 1
 
+    try: engine.process_queries("a & ( b | !c )") == {"op0": ["!", "c"],
+                                                      "op1": ["|", "b", "op0"],
+                                                      "op2": ["&", "a", "op1"]}
+    except: print("--Good Query Failed to Process: a & ( b | !c )")
+    else: good += 1
 
-    # try:
-    #     assert new_engine.process_queries('hello  bob') == {"OP0": ["hello", "bob"]}
-    #     assert new_engine.tweeted_word_library["this"][11] != "hello neeva this is neeva"
-    #     assert new_engine.tweeted_word_library["stuff"][12] == "hello stuff"
-    # except:
-    #     print("--Incorrect Outputs")
-    #     raise
-    # else:
-    #     print("--All outputs are corrects")
+    if good == 7: print("--Successfully Process Query")
 
-
-def func_timer(func, param, steroidize=False):
+def test_searchTweets(list_of_tweets, base_engine, new_engine):
     """
-    Return the waiting time after the given function 
-    is called
+    Test the method Search
 
-    :param func: the function to run
-    :param param: the parameter func needs
-    :param steroidize: calls func 1000 times
-    :return: a float indicating the seconds the given
-    function takes from calling to terminating
+    :param list_of_tweets: list of tweets to process
+    :param base_engine: old engine, used to compared results with new_engine
+    :param new_engine: new engine, needed to be tested
     """
-    time.sleep(1)
-    start = None
-    end = None
-    if steroidize:
-        start = time.time()
-        for _ in range(1000):
-            func(param)
-        end = time.time()
-    else:
-        start = time.time()
-        func(param)
-        end = time.time()
-    return end - start
+    print("*Testing Search Query")
+    new_engine.process_tweets(list_of_tweets)
+    base_engine.process_tweets(list_of_tweets)
+    try: new_engine.search("")
+    except: print("--Failed to run correctly")
+    else: print("--Successfully Run")
 
-def process_time(list_of_tweets, base_engine, new_engine):
-    """
-    Timing the Process Function
+    good = 0
+    try: new_engine.search("") == []
+    except: print("--Failed to Search: EmptyString")
+    else: good += 1
 
-    :param list_of_tweets: list of tweets used to process and search
-    :param base_engine: the original tweets processor in starter_code
-    :param new_engine: the improved tweets processor in improved_Code
-    """
-    print("--Processing Time:")
-    print(f"{'Size':<11} {'Base Time':<19} {'New Time'}")
-    size = 1
-    while size < len(list_of_tweets):
-        print(f"{size:<10}", end="")
-        test_sample = random.sample(list_of_tweets, size)
+    try: new_engine.search("notinanytweets") == []
+    except: print("--Failed to Search: notinanytweets")
+    else: good += 1
+    
+    try: len(new_engine.search("Neeva")) == 5
+    except: print("--Failed to Search: Neeva")
+    else: good += 1
+    
+    try: 
+        new_results = new_engine.search("neeva")
+        base_results = base_engine.search("neeva")
+        assert new_results[0] == base_results[0][0]
+    except: print("--Not Matched Results from Base Engine and New Engine: Neeva")
+    else: good += 1
 
-        base_engine.list_of_tweets = []
-        assert(len(base_engine.list_of_tweets) == 0)
-        base_time = func_timer(base_engine.process_tweets, test_sample, True)
-        print(f"{base_time:<20.10f}", end="")
-        
-        new_engine.tweeted_time = {}
-        new_engine.tweeted_words = {}
-        assert(len(new_engine.tweeted_words) == 0)
-        assert(len(new_engine.tweeted_time) == 0)
-        new_time = func_timer(new_engine.process_tweets, test_sample, True)
-        print(f"{new_time:.10f}", end='\n')
+    try: 
+        results = new_engine.search("!Neeva")
+        for res in results:
+            assert "neeva" not in res
+    except: print("--Failed to Search: !Neeva")
+    else: good += 1
+    
+    try: 
+        results = new_engine.search("hello & !(neeva | is)")
+        for res in results:
+            assert "hello" in res
+            assert "neeva" not in res
+            assert "is" not in res 
+    except: print("--Failed to Search: hello & !(neeva | is)")
+    else: good += 1
 
-        size *= 2
-    print()
-        
-def search_time(list_of_tweets, base_engine, new_engine, query):
-    """
-    Timing the Search function
-
-    :param list_of_tweets: list of tweets used to process and search
-    :param base_engine: the original tweets searcher in starter_code
-    :param new_engine: the improved tweets searcher in improved_Code
-    """
-    print("--Searching Time:")
-    print(f"{'Size':<11} {'Base Time':<19} {'New Time'}")
-    size = 1
-    while size < len(list_of_tweets):
-        print(f"{size:<10}", end="")
-        test_sample = random.sample(list_of_tweets, size)
-
-        base_engine.list_of_tweets = []
-        assert(len(base_engine.list_of_tweets) == 0)
-        base_engine.process_tweets(test_sample)
-        assert(len(base_engine.list_of_tweets) == size)
-        base_time = func_timer(base_engine.search, query, True)
-        print(f"{base_time:<20.10f}", end="")
-
-        new_engine.tweeted_time = {}
-        new_engine.tweeted_words = {}
-        assert(len(new_engine.tweeted_words) == 0)
-        assert(len(new_engine.tweeted_time) == 0)
-        new_engine.process_tweets(test_sample)
-        new_time = func_timer(new_engine.search, query, True)
-        print(f"{new_time:.10f}", end='\n')
-
-        size *= 2
-    print()
+    if good == 6: print("--Successfully Search Query")
 
 def get_tweetslist(filename):
     """
@@ -264,18 +247,63 @@ def get_tweetslist(filename):
             tweet = str(row[1])
             list_of_tweets.append((timestamp, tweet))
     return list_of_tweets
+    
+def time_Process_Tweets():
+    """
+    Timing the process_tweets method
+    """
+
+    setup_code = """
+import improved_code
+import starter_code
+import testing
+
+base_engine = starter_code.TweetIndex()
+new_engine = improved_code.ImprovedTweetIndex() 
+list_of_tweets = testing.get_tweetslist("tweets")
+                 """
+
+    test_code1 = """base_engine.process_tweets(list_of_tweets)"""
+    test_code2 = """new_engine.process_tweets(list_of_tweets)"""
+
+    base_time = timeit.timeit(stmt=test_code1, setup=setup_code, number=1000)
+    print(f"--Benchmark Time: {base_time:.10}")
+    new_time = timeit.timeit(stmt=test_code2, setup=setup_code, number=1000)
+    print(f"--New Approach Time: {new_time:.10}")
+
+def time_Search():
+    """
+    Timing the serach method
+    """
+
+    setup_code = """
+import improved_code
+import starter_code
+import testing
+
+base_engine = starter_code.TweetIndex()
+new_engine = improved_code.ImprovedTweetIndex() 
+list_of_tweets = testing.get_tweetslist("tweets")
+base_engine.process_tweets(list_of_tweets)
+new_engine.process_tweets(list_of_tweets)
+                 """
+
+    test_code1 = """base_engine.search("neeva")"""
+    test_code2 = """new_engine.search("neeva")"""
+
+    base_time = timeit.timeit(stmt=test_code1, setup=setup_code, number=1000)
+    print(f"--Benchmark Time: {base_time:.10}")
+    new_time = timeit.timeit(stmt=test_code2, setup=setup_code, number=1000)
+    print(f"--New Approach Time: {new_time:.10}")
 
 if __name__ == "__main__":
     list_of_tweets = get_tweetslist("small")
-    base_ti = TweetIndex()
-    new_ti = ImprovedTweetIndex() 
-    # test_processTweets(list_of_tweets, new_ti)
-    test_processQueries(list_of_tweets, new_ti)
-    # test_searchTweets(list_of_tweets, new_ti)
-
-    # list_of_tweets = get_tweetslist("tweets")
-    # base_ti = TweetIndex()
-    # new_ti = ImprovedTweetIndex() 
-    # process_time(list_of_tweets, base_ti, new_ti)
-    # search_time(list_of_tweets, base_ti, new_ti, "neeva people")
-
+    base_engine = TweetIndex()
+    new_engine = ImprovedTweetIndex() 
+    test_processTweets(list_of_tweets, new_engine)
+    test_processQueries(list_of_tweets, new_engine)
+    test_searchTweets(list_of_tweets, base_engine, new_engine)
+    print("*Processing Time:")
+    time_Process_Tweets()
+    print("*Searching Time:")
+    time_Search()
