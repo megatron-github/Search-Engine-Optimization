@@ -267,9 +267,9 @@ list_of_tweets = testing.get_tweetslist("tweets")
     test_code2 = """new_engine.process_tweets(list_of_tweets)"""
 
     base_time = timeit.timeit(stmt=test_code1, setup=setup_code, number=1000)
-    print(f"--Benchmark Time: {base_time:.10}")
+    print(f"--Benchmark Time: {base_time:.10} secs")
     new_time = timeit.timeit(stmt=test_code2, setup=setup_code, number=1000)
-    print(f"--New Approach Time: {new_time:.10}")
+    print(f"--New Approach Time: {new_time:.10} secs")
 
 def time_Search():
     """
@@ -292,9 +292,9 @@ new_engine.process_tweets(list_of_tweets)
     test_code2 = """new_engine.search("neeva")"""
 
     base_time = timeit.timeit(stmt=test_code1, setup=setup_code, number=1000)
-    print(f"--Benchmark Time: {base_time:.10}")
+    print(f"--Benchmark Time: {base_time:.10} secs")
     new_time = timeit.timeit(stmt=test_code2, setup=setup_code, number=1000)
-    print(f"--New Approach Time: {new_time:.10}")
+    print(f"--New Approach Time: {new_time:.10} secs")
 
 if __name__ == "__main__":
     list_of_tweets = get_tweetslist("small")
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     test_processTweets(list_of_tweets, new_engine)
     test_processQueries(list_of_tweets, new_engine)
     test_searchTweets(list_of_tweets, base_engine, new_engine)
-    print("*Processing Time:")
+    print("*Processing Time (running 1000 times):")
     time_Process_Tweets()
-    print("*Searching Time:")
+    print("*Searching Time (running 1000 times):")
     time_Search()
