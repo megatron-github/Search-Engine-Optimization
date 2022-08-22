@@ -33,7 +33,7 @@ The running time of `search()` is affected by the sizes of the query string, the
 
 To optimize the running time of `search()`, we may want to share the finding job of `search()` with `process_tweets()`. We know that the running time of `search()` is `O(l·m·n)` for `l = number of words in the query`, `m = number of words in the tweet`, and `n = number of available tweets`. 
 
-With Python's dictionary (similar to a hash table), we can save each word in a tweet as a unique key. Under each key, we will build a set of tweets that contain the keyword. Given the keyword in the query, we can retrieve the desired set of tweets in `O(1)` time. With such an approach, we don't have to worry about the number of words in each tweet going forward. Thus, we will have new time complexity of `O(l·n)` for `l = number of words in the query`, and `n = number of available tweets`. We want to store the tweets containing the keyword into a set because we want to perform set operations when classifying desired tweets. 
+With Python's dictionary (similar to a hash table), we can save each word in a tweet as a unique key. Under each key, we will build a set of tweets that contain the keyword. Given the keyword in the query, we can retrieve the desired set of tweets in `O(1)` time. With such an approach, we don't have to worry about the number of words in each tweet going forward. Thus, we will have new time complexity of `O(l·n)` for `l = number of words in the query`, and `n = number of available tweets`. We want to store the tweets containing the keyword into a set because we want to perform set operations when filtering for desired tweets. 
 
 In addition, we will also build another dictionary with the tweet strings as keys. Associated with each key is the tweet's timestamp. We only want to save the tweet's latest timestamp in case of a tweet is repeated. With this set of data, we will have access to all the tweets and their timestamps given by the users. We need a set of all the tweets to deal with the logical operator NOT and the set operation Difference.
 
@@ -50,12 +50,14 @@ Evaluating with data: "tweets.csv"
 Search query : "neeva"
 
 Benchmark (given) version:
+
 `
 process_tweets (running 1000 times) took ~2.716411115 secs.
 search         (running 1000 times) took ~4.227682672 secs.
 `
 
 Improved (new) version:
+
 `
 process_tweets (running 1000 times) took ~2.759720021 secs.
 search         (running 1000 times) took ~3.783080801 secs.
@@ -64,6 +66,7 @@ search         (running 1000 times) took ~3.783080801 secs.
 ## How to run
 
 Imported libraries used for the entire projects
+
 `
 csv <!--to open tweets.csv-->
 re  <!--to use regular expression for string matching in new engine-->
@@ -71,16 +74,19 @@ timeit <!--to report real running time of the process_tweets() and search() meth
 `
 
 To run old tweet searching engine
+
 `
 python starter_code.py
 `
 
 To run new tweet searching engine
+
 `
 python improved_code.py
 `
 
 To test and time the tweet searching engines
+
 `
 python testing.py
 `
