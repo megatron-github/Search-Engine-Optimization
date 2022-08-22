@@ -14,7 +14,11 @@ The search engine`TweetIndex` had two methods — `search()` and `process_tweets
 
 To search for the latest tweet that satisfied the query, the method `search()` loops through the entire list of tweets. For each tweet, the engine checks if it contains all the words in the query. The engine only selects the tweet that contains all the query words and has the latest timestamp.
 
-The running time of `search()` is affected by the sizes of the query string, the tweet string, and the list of tweets. For *l = number of words in the query*,  *m = number of words in the tweet*, and *n = number of available tweets*, the running time of `search()` is *O(l·m·n)*. Hence, as the list of tweets, the length of each tweet strings, and/or the length of the query string gets bigger, the running time of `search()` will get worse and worse.
+The running time of `search()` is affected by the sizes of the query string, the tweet string, and the list of tweets. Thus, the running time of `search()` is 
+```
+O(l·m·n) for l = # words in the query,  m = # in the tweet, and n = # available tweets.
+```
+Hence, as the list of tweets, the length of each tweet strings, and/or the length of the query string gets bigger, the running time of `search()` will get worse and worse.
 
 ## Approach
 
@@ -33,10 +37,15 @@ The running time of `search()` is affected by the sizes of the query string, the
 
 To optimize the running time of `search()`, we may want to share the finding job of `search()` with `process_tweets()`. We know that the running time of `search()` is 
 ```
-O(l·m·n) for l = number of words in the query, m = number of words in the tweet, and n = number of available tweets. 
+O(l·m·n) 
+for l = # words in the query, m = # words in the tweet, and n = # available tweets. 
 ```
 
-With Python's dictionary (similar to a hash table), we can save each word in a tweet as a unique key. Under each key, we will build a set of tweets that contain the keyword (i.e, key = "hello", tweets(key) = {"hello world"}). Using the keyword, we can access the desired set of tweets in *O(1)* time. With such an approach, we don't have to worry about the number of words in each tweet going forward. Thus, we will have new time complexity of **O(l·n)** for *l = the number of words in the query*, and *n = number of available tweets*. We want to store the tweets containing the keyword into a set because we want to perform set operations when filtering for desired tweets.
+With Python's dictionary (similar to a hash table), we can save each word in a tweet as a unique key. Under each key, we will build a set of tweets that contain the keyword (i.e, key = "hello", tweets(key) = {"hello world"}). Using the keyword, we can access the desired set of tweets in *O(1)* time. With such an approach, we don't have to worry about the number of words in each tweet going forward. Thus, we will have new time complexity of 
+```
+O(l·n) for l = # words in the query, and n = # available tweets. 
+```
+We want to store the tweets containing the keyword into a set because we want to perform set operations when filtering for desired tweets.
 
 In addition, we will also build another dictionary with the tweet strings as keys. Associated with each key is the tweet's timestamp. We only want to save the tweet's latest timestamp in case of a tweet is repeated. With this set of data, we will have access to all the tweets and their timestamps given by the users. We need a set of all the tweets to deal with the logical operator NOT and the set operation Difference.
 
@@ -49,19 +58,18 @@ A query can be a string with only words a
 
 ## Performance/Report
 
-Evaluating with data: *tweets.csv*
-
-Search query : *neeva*
+```
+Evaluating with data: tweets.csv
+Search query : neeva
+```
 
 Benchmark (given) version:
-
 ```
 process_tweets (running 1000 times) took ~2.716411115 secs.
 search         (running 1000 times) took ~4.227682672 secs.
 ```
 
 Improved (new) version:
-
 ```
 process_tweets (running 1000 times) took ~2.759720021 secs.
 search         (running 1000 times) took ~3.783080801 secs.
