@@ -1,7 +1,5 @@
 from improved_code import *
 from starter_code import *
-import random
-import time
 import timeit
 
 def test_processTweets(list_of_tweets, engine):
