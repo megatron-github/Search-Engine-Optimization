@@ -53,6 +53,7 @@ Benchmark (given) version:
 
 `
 process_tweets (running 1000 times) took ~2.716411115 secs.
+
 search         (running 1000 times) took ~4.227682672 secs.
 `
 
@@ -60,6 +61,7 @@ Improved (new) version:
 
 `
 process_tweets (running 1000 times) took ~2.759720021 secs.
+
 search         (running 1000 times) took ~3.783080801 secs.
 `
 
