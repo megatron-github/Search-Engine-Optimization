@@ -250,7 +250,7 @@ def time_Process_Tweets():
     """
     Timing the process_tweets method
     """
-
+    print("*Processing Time (running 1000 times):")
     setup_code = """
 import improved_code
 import starter_code
@@ -273,7 +273,7 @@ def time_Search():
     """
     Timing the serach method
     """
-
+    print("*Searching Time (running 1000 times):")
     setup_code = """
 import improved_code
 import starter_code
@@ -286,11 +286,11 @@ base_engine.process_tweets(list_of_tweets)
 new_engine.process_tweets(list_of_tweets)
                  """
 
-    test_code1 = """base_engine.search("neeva")"""
-    test_code2 = """new_engine.search("neeva")"""
+    test_code1 = """base_engine.search("neeva special way")"""
+    test_code2 = """new_engine.search("neeva & special & way")"""
 
     base_time = timeit.timeit(stmt=test_code1, setup=setup_code, number=1000)
-    print(f"--Benchmark Time: {base_time:.10} secs")
+    print(f"--Benchmark Time:    {base_time:.10} secs")
     new_time = timeit.timeit(stmt=test_code2, setup=setup_code, number=1000)
     print(f"--New Approach Time: {new_time:.10} secs")
 
@@ -301,7 +301,5 @@ if __name__ == "__main__":
     test_processTweets(list_of_tweets, new_engine)
     test_processQueries(list_of_tweets, new_engine)
     test_searchTweets(list_of_tweets, base_engine, new_engine)
-    print("*Processing Time (running 1000 times):")
     time_Process_Tweets()
-    print("*Searching Time (running 1000 times):")
     time_Search()

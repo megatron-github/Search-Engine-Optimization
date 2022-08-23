@@ -27,7 +27,7 @@ Hence, as the list of tweets, the length of each tweet strings, and/or the lengt
 1. We assume that tweet timestamps are globally unique positive integers.
 2. Every two words in a tweets are seperated by a space character.
 3. There are no special characters beside 26 letters in the English alphabet and the space character in the tweets.
-4. Beside the operator **_!_ (_NOT_)**, there is always a space character to seperate a logical operator and a word in query.
+4. Beside the operator **_NOT_**, there is always a space character to seperate a logical operator and a word in query.
 5. When logical operator exists, every two words in the query must be seperated by a logical operator.
 6. When **_AND_** and **_OR_** operator are included in the query, parentheses must also be included.
 7. All parentheses must be included and formatted correctly.
@@ -51,16 +51,16 @@ In addition, we will also build another dictionary with the tweet strings as key
 
 ### Set Operations
 
-Given a search query, we desired a set of tweets, where each tweet in the set contains all of the query words. Now that, for each query word, we can retrieve a set of tweets. Our desired set of tweets is the Intersection of all retrieved sets. Since we want to extend our machine to handle search operations such as **_&_ (_AND_)**, **_|_ (_OR_)**, and **_!_ (_NOT_)**, we want to apply other set operations such as Union and Difference. 
+Given a search query, we desired a set of tweets, where each tweet in the set contains all of the query words. Now that, for each query word, we can retrieve a set of tweets. Our desired set of tweets is the **Intersection** of all retrieved sets. Since we want to extend our search engine to handle search operations such as **_&_ (_AND_)**, **_|_ (_OR_)**, and **_!_ (_NOT_)**, we want to apply other set operations such as **Union** and **Difference**. 
 
-We use Intersection when we want a set of tweets, where each tweet contains all the query words. We can apply a similar idea with the operation Union. Similar to the logical operator OR, Union returns a set of tweets, where each tweet contains one or more than two query words. With the logical operator NOT, we want to retrieve all the tweets that do not include the query word. Given S = the set of all available tweets, the operation Difference will subtract all the tweets containing the query word from S. Python has optimized built-in functions for all the mentioned set operations. Given the sets *s* and *t*, the average running time of Python set operations is *O(len(s) or len(t))*. For intersection, the worst case is *O(len(s) · len(t))*. The biggest set of tweets we can retrieve is the set of all available tweets. Thus, on average, we can understand the time complexity of set operations to be 
+We use **Intersection** when we want a set of tweets, where each tweet contains all the query words (i.e logical operator **_AND_**). We can apply a similar idea with the operation **Union**. Similar to the logical operator **_OR_**, **Union** returns a set of tweets, where each tweet contains one or more than two query words. With the logical operator **_NOT_**, we want to retrieve all the tweets that do not include the query word. Given *S* = the set of all available tweets, the operation **Difference** will subtract all the tweets containing the query word from *S*. Python has optimized built-in functions for all the mentioned set operations. Given the sets *s* and *t*, the average running time of Python set operations is *O(len(s) or len(t))*. For intersection, the worst case is *O(len(s) · len(t))*. The biggest set of tweets we can retrieve is the set of all available tweets. Thus, on average, we can understand the time complexity of set operations to be 
 ```
 O(n) for n = # available tweets.
 ```
 
 ### Processing Queries
 
-Now that we can get a set of tweets knowing a word inside the desired tweets and perform set operations, we can extend our machine to handle logical operators such as **_&_ (_AND_)**, **_|_ (_OR_)**, and **_!_ (_NOT_)**. From our **Assumptions**, the standard format for a query with logical operators is 
+Now that we can get a set of tweets knowing a word inside the desired tweets and perform set operations, we can extend our search engine to handle logical operators such as **_&_ (_AND_)**, **_|_ (_OR_)**, and **_!_ (_NOT_)**. From our **Assumptions**, the standard format for a query with logical operators is 
 ```
 For operators: & and |:
 "query_A OPERATOR query_B"
@@ -95,7 +95,7 @@ instruction set updated to:
 query string updated to:
 "A & op1 & op0".
 ```
-After processing all query words preceded by logical operator **_!_ (_NOT_)** and query strings inside parentheses, we will process the query string from left to right. For query strings with logical operators, we will continue to process and update the query string until all logical operators are gone, i.e,
+After processing all query words preceded by logical operator **_!_ (_NOT_)** and query strings inside parentheses, we will process the query string from left to right. For query strings containing logical operators, we will continue to process and update the query string until all logical operators are gone, i.e,
 ```
 instruction set updated to:
 {
@@ -110,16 +110,46 @@ query string updated to:
 "op2 & op0",
 "op3"
 ```
-For query string without logical operators, we will save the query string as
+The number of operation in the instruction set is equal to the number of logical operators found in the input query string. The number of operations in the instruction set equals the number of logical operators in the input query string. For query string without logical operators, we will save the query string as
 ```
 instruction set = { op0: [&, query_word1, query_word2, ...] }
 ```
+For a query string without a logical operator, the number of operations in the instruction set equals the number of query words in the input query string.
+
+The algorithm used for this section utilized Python's regular expression. Thus, the time complexity of this section depends on the length of the query string and string search via regular expression.
 
 ### Searching Tweets
 
+To search for a set of recent tweets, the `search()` asks users to give a query string as an argument. Then, it will process the query strings to get the instruction set. For each operation in the instruction set, the search engine will use the query words to find the desired sets of tweets and perform the needed set operation. The set of tweets created from the last instruction will satisfy all the conditions in the query string. The engine will sort the final set of tweets in reverse order using the timestamp of each tweet. Then it returns the first five tweets from the set. 
+
+The time complexity of `search()` depends on the length of the query string, string search via regular expression, the running time of each set operations, and the sorting time of the final set. 
+```
+Let k = time complexity of processing queries (via regular expression)
+Let h = # operations in the instruction set/# query words in the input query string
+```
+For each instruction, `search()` is expected to perform some set operations with the complexity of 
+```
+O(n) for n = # available tweets.
+```
+For each instruction, `search()` is expected to perform some set operations with the complexity of *O(n)*. Thus, the running time of finding the set of tweets that satisfied the query is
+```
+O(h·n) for  k = # operations in the instruction set, and n = # available tweets.
+```
+Since the query string is often very small compared to the list of all available tweets, *O(k·n)* will become more of *O(n)* as *n* get biggers and in average.
+The sorting algorithm is optimized by Python and has the time complexity of 
+```
+O(n·lgn) for n = # available tweets.
+```
+Thus, the time complexity of `search()` is
+```
+O(k) + O(h·n) + O(n·lgn).
+```
+
+Even though the time complexity of the newer search engine may look worse than the starter code — **_O(n·lgn)_ vs. _O(l·m·n)_**. However, the term **_n_** in the time complexity of the newer engine does not always equal the entire list of available tweets. On average, the new engine only has to work with a fraction of all available tweets, given that every tweet is a little different from one another. The term **_n_** in the time complexity of the older engine implies all available tweets. As the list of available tweets gets bigger, the query string gets more complicated, or the tweets get longer, the new engine will prevail as the winner. 
 
 ## Performance/Report
 
+### Part 1:
 ```
 Evaluating with data: tweets.csv
 Search query:         "neeva"
@@ -127,15 +157,32 @@ Search query:         "neeva"
 
 Benchmark (given) version:
 ```
-process_tweets (running 1000 times) took ~2.716411115 secs.
-search         (running 1000 times) took ~4.227682672 secs.
+process_tweets (processing 1000 times) took ~2.716411115 secs.
+search         (searching 1000 times)  took ~4.227682672 secs.
 ```
 
 Improved (new) version:
 ```
-process_tweets (running 1000 times) took ~2.759720021 secs.
-search         (running 1000 times) took ~3.783080801 secs.
+process_tweets (processing 1000 times) took ~2.759720021 secs.
+search         (searching 1000 times)  took ~3.783080801 secs.
 ```
+
+### Part 2:
+
+Benchmark (given) version:
+```
+Evaluating with data: tweets.csv
+Search query:         "neeva special way"
+process_tweets (processing 1000 times) took ~2.699869635 secs.
+search         (searching 1000 times)  took ~5.071821972 secs.
+```
+
+Improved (new) version:
+```
+Evaluating with data: tweets.csv
+Search query:         "neeva & special & way"
+process_tweets (processing 1000 times) took ~2.773678478 secs.
+search         (searching 1000 times)  took ~0.595057001 secs.
 
 ## How to run
 
@@ -148,16 +195,19 @@ timeit  <!--to report real running time of the process_tweets() and search() met
 
 To run old tweet searching engine
 ```
-python starter_code.py
+cd py
+python starter_code.py 
 ```
 
 To run new tweet searching engine
 ```
+cd py
 python improved_code.py
 ```
 
-To test and time the tweet searching engines
+To see test results and times of the tweet searching engines
 ```
+cd py
 python testing.py
 ```
 

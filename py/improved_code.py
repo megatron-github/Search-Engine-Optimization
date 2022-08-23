@@ -235,14 +235,4 @@ if __name__ == "__main__":
             timestamp = int(row[0])
             tweet = str(row[1])
             list_of_tweets.append((timestamp, tweet))
-            
-    # ti = ImprovedTweetIndex()
-    # ti.process_tweets(list_of_tweets)
-    # print(ti.search("Neeva & (people | search)"))
-    # ti.search("Neeva people")
-    # ti.search('hello world')
-    # ti.search('Neeva & search & ((works | stuff) | !(not & world))')
-    # ti.search('Neeva & stuffs')
-    # ti.search('Neeva & !(not | world)')
-    # ti.search('')
 
