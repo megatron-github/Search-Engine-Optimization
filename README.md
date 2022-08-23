@@ -95,7 +95,7 @@ instruction set updated to:
 query string updated to:
 "A & op1 & op0".
 ```
-After processing all query words preceded by logical operator **_!_ (_NOT_)** and query strings inside parentheses, we will process the query string from left to right. For query strings containing logical operators, we will continue to process and update the query string until all logical operators are gone, i.e,
+For query strings containing logical operators, we will continue to process and update the query string until all logical operators are gone. After processing all query words preceded by logical operator **_!_ (_NOT_)** and query strings inside parentheses, we will process the query string from left to right, i.e,
 ```
 instruction set updated to:
 {
@@ -135,7 +135,7 @@ For each instruction, `search()` is expected to perform some set operations with
 ```
 O(h·n) for  h = # operations in the instruction set, and n = # available tweets.
 ```
-Since the query string is often very small compared to the list of all available tweets, *O(k·n)* will become more of *O(n)* as *n* get biggers and in average.
+Since the query string is often very small compared to the list of all available tweets, *O(h·n)* will become more of *O(n)* in average as *n* get biggers.
 The sorting algorithm is optimized by Python and has the time complexity of 
 ```
 O(n·lgn) for n = # available tweets.
