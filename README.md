@@ -133,7 +133,7 @@ O(n) for n = # available tweets.
 ```
 For each instruction, `search()` is expected to perform some set operations with the complexity of *O(n)*. Thus, the running time of finding the set of tweets that satisfied the query is
 ```
-O(h·n) for  k = # operations in the instruction set, and n = # available tweets.
+O(h·n) for  h = # operations in the instruction set, and n = # available tweets.
 ```
 Since the query string is often very small compared to the list of all available tweets, *O(k·n)* will become more of *O(n)* as *n* get biggers and in average.
 The sorting algorithm is optimized by Python and has the time complexity of 
@@ -183,6 +183,7 @@ Evaluating with data: tweets.csv
 Search query:         "neeva & special & way"
 process_tweets (processing 1000 times) took ~2.773678478 secs.
 search         (searching 1000 times)  took ~0.595057001 secs.
+```
 
 ## How to run
 
