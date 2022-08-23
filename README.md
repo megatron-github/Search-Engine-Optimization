@@ -29,7 +29,7 @@ Hence, as the list of tweets, the length of each tweet strings, and/or the lengt
 3. There are no special characters beside 26 letters in the English alphabet and the space character in the tweets.
 4. Beside the operator **_NOT_**, there is always a space character to seperate a logical operator and a word in query.
 5. When logical operator exists, every two words in the query must be seperated by a logical operator.
-6. When **_AND_** and **_OR_** operator are included in the query, parentheses must also be included.
+6. When **_AND_** and **_OR_** operators are included in the query, parentheses must also be included.
 7. All parentheses must be included and formatted correctly.
 8. A tweet will never have special characters such as **!, &, |**.
 9. The returning five most recent tweets are all unique.
