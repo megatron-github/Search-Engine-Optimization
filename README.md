@@ -27,9 +27,9 @@ Hence, as the list of tweets, the length of each tweet strings, and/or the lengt
 1. We assume that tweet timestamps are globally unique positive integers.
 2. Every two words in a tweets are seperated by a space character.
 3. There are no special characters beside 26 letters in the English alphabet and the space character in the tweets.
-4. Beside the operator **! (NOT)**, there is always a space character to seperate a logical operator and a word in query.
+4. Beside the operator **_!_ (_NOT_)**, there is always a space character to seperate a logical operator and a word in query.
 5. When logical operator exists, every two words in the query must be seperated by a logical operator.
-6. When AND and OR operator are included in the query, parentheses must also be included.
+6. When **_AND_** and **_OR_** operator are included in the query, parentheses must also be included.
 7. All parentheses must be included and formatted correctly.
 8. A tweet will never have special characters such as **!, &, |**.
 9. The returning five most recent tweets are all unique.
@@ -41,17 +41,17 @@ To optimize the running time of `search()`, we may want to share the finding job
 O(l·m·n) for l = # words in the query, m = # words in the tweet, and n = # available tweets. 
 ```
 
-With Python's dictionary (similar to a hash table), we can save each word in a tweet as a unique key. Under each key, we will build a set of tweets that contain the keyword (i.e, key = "hello", tweets(key) = {"hello world"}). Using the keyword, we can access the desired set of tweets in *O(1)* time. With such an approach, we don't have to worry about the number of words in each tweet going forward. Thus, we will have new time complexity of 
+With Python's dictionary (similar to a hash table), we can save each word in a tweet as a unique key. Under each key, we will build a set of tweets that contain the keyword (i.e, key = "hello", tweets(key) = {"hello world"}). Using the keyword, we can access the desired set of tweets in *O(1)*-time. With such an approach, we don't have to worry about the number of words in each tweet going forward. Thus, we will have new time complexity of 
 ```
 O(l·n) for l = # words in the query, and n = # available tweets. 
 ```
 We want to store the tweets containing the keyword into a set because we want to perform set operations when filtering for desired tweets.
 
-In addition, we will also build another dictionary with the tweet strings as keys. Associated with each key is the tweet's timestamp. We only want to save the tweet's latest timestamp in case of a tweet is repeated. With this set of data, we will have access to all the tweets and their timestamps given by the users. We need a set of all the tweets to deal with the logical operator *! (NOT)* and the set operation Difference.
+In addition, we will also build another dictionary with the tweet strings as keys. Associated with each key is the tweet's timestamp. We only want to save the tweet's latest timestamp in case of a tweet is repeated. With this set of data, we will have access to all the tweets and their timestamps given by the users. We need a set of all the tweets to deal with the logical operator **_!_ (_NOT_)** and the set operation Difference.
 
 ### Set Operations
 
-Given a search query, we desired a set of tweets, where each tweet in the set contains all of the query words. Now that, for each query word, we can retrieve a set of tweets. Our desired set of tweets is the Intersection of all retrieved sets. Since we want to extend our machine to handle search operations such as **& (AND)**, **| (OR)**, and **! (NOT)**, we want to apply other set operations such as Union and Difference. 
+Given a search query, we desired a set of tweets, where each tweet in the set contains all of the query words. Now that, for each query word, we can retrieve a set of tweets. Our desired set of tweets is the Intersection of all retrieved sets. Since we want to extend our machine to handle search operations such as **_&_ (_AND_)**, **_|_ (_OR_)**, and **_!_ (_NOT_)**, we want to apply other set operations such as Union and Difference. 
 
 We use Intersection when we want a set of tweets, where each tweet contains all the query words. We can apply a similar idea with the operation Union. Similar to the logical operator OR, Union returns a set of tweets, where each tweet contains one or more than two query words. With the logical operator NOT, we want to retrieve all the tweets that do not include the query word. Given S = the set of all available tweets, the operation Difference will subtract all the tweets containing the query word from S. Python has optimized built-in functions for all the mentioned set operations. Given the sets *s* and *t*, the average running time of Python set operations is *O(len(s) or len(t))*. For intersection, the worst case is *O(len(s) · len(t))*. The biggest set of tweets we can retrieve is the set of all available tweets. Thus, on average, we can understand the time complexity of set operations to be 
 ```
@@ -60,11 +60,60 @@ O(n) for n = # available tweets.
 
 ### Processing Queries
 
-Now that we can get a set of tweets knowing a word inside the desired tweets and perform set operations, we can extend our machine to handle logical operators such as **& (AND)**, **| (OR)**, and **! (NOT)**. From our **Assumptions**, the standard format for a query with logical operators is 
+Now that we can get a set of tweets knowing a word inside the desired tweets and perform set operations, we can extend our machine to handle logical operators such as **_&_ (_AND_)**, **_|_ (_OR_)**, and **_!_ (_NOT_)**. From our **Assumptions**, the standard format for a query with logical operators is 
 ```
-"query_A OPERATOR query_B".
-```
+For operators: & and |:
+"query_A OPERATOR query_B"
 
+For operator: !
+"!query_A".
+```
+The query string may also include parentheses telling which sets and operations to do first. 
+
+Given a complicated query with multiple set operations, we will need break down the query string into parts and steps. Suppose we have given a query string of 
+```
+"A & (B | C) & !D".
+```
+Our approach is to apply the idea of LIFO. First, we will deal with all words preceded by the logical operator **_!_ (_NOT_)** by saving it into a Python dictionary-based instruction set as
+```
+instruction set:
+{
+    op0: [!, D]
+}
+
+query string updated to:
+"A & (B | C) & op0".
+```
+Then, we process all operations in the parentheses with the updated query string to have
+```
+instruction set updated to:
+{
+    op0: [!, D],
+    op1: [|, B, C]
+}
+
+query string updated to:
+"A & op1 & op0".
+```
+After processing all query words preceded by logical operator **_!_ (_NOT_)** and query strings inside parentheses, we will process the query string from left to right. For query strings with logical operators, we will continue to process and update the query string until all logical operators are gone, i.e,
+```
+instruction set updated to:
+{
+    op0: [!, D],
+    op1: [|, B, C],
+    op2: [&, A, op1],
+    op3: [&, op2, op0]
+}
+
+query string updated to:
+"A & op1 & op0",
+"op2 & op0",
+"op3"
+```
+For query string without logical operators, we will save the query string as
+```
+instruction set = { op0: [&, query_word1, query_word2, ...] }
+```
 
 ### Searching Tweets
 
