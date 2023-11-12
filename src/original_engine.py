@@ -1,10 +1,6 @@
-"""
-Please use Python version 3.7+
-"""
-
+# /usr/bin/env python3
 import csv
 from typing import List, Tuple
-
 
 class TweetIndex:
     # Starter code--please override
@@ -32,7 +28,7 @@ class TweetIndex:
         search looks for the most recent tweet (highest timestamp) that contains all words in query.
 
         :param query: the given query string
-        :return: a list of tuples of the form (tweet text, tweet timestamp), ordered by highest timestamp tweets first. 
+        :return: a list of tuples of the form (tweet text, tweet timestamp), ordered by highest timestamp tweets first.
         If no such tweet exists, returns empty list.
         """
         list_of_words = query.split(" ")
@@ -61,7 +57,7 @@ if __name__ == "__main__":
             timestamp = int(row[0])
             tweet = str(row[1])
             list_of_tweets.append((timestamp, tweet))
-            
+
     ti = TweetIndex()
     ti.process_tweets(list_of_tweets)
     print(ti.list_of_tweets)

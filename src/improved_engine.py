@@ -1,3 +1,4 @@
+# /usr/bin/env python3
 import csv
 import re
 
@@ -19,7 +20,7 @@ def valid_bracket_struct(struct):
             if len(stack) == 0 or brackets[stack.pop()] != struct[i]:
                 return False
     return False if len(stack) != 0 else True
-    
+
 class ImprovedTweetIndex:
     """ An improved search engine"""
     def __init__(self):
@@ -28,8 +29,8 @@ class ImprovedTweetIndex:
 
     def __process_tweets_helper(self, tweet):
         """
-        Given a tweet, save all the tweeted words as key into a 
-        dictionary-based tweeted_words. Each key will associate 
+        Given a tweet, save all the tweeted words as key into a
+        dictionary-based tweeted_words. Each key will associate
         with a set of tweets that contain the key.
         """
         # for every word in the tweet
@@ -38,18 +39,18 @@ class ImprovedTweetIndex:
             try: self.tweeted_words[word]
             # add the word to dict as key, save the tweet under that key
             except: self.tweeted_words[word] = {tweet}
-            else: self.tweeted_words[word].add(tweet) 
+            else: self.tweeted_words[word].add(tweet)
 
     def process_tweets(self, list_of_timestamps_and_tweets):
         """
-        Given a list of timestamps and tweet, save all tweeted words as key 
-        into a dictionary-based tweeted_words. Each key will associate with 
-        a set of tweets that contain the key. 
-        
-        Make each tweet a key in tweeted_times, associate with each key is 
-        the timestamp of the tweet 
+        Given a list of timestamps and tweet, save all tweeted words as key
+        into a dictionary-based tweeted_words. Each key will associate with
+        a set of tweets that contain the key.
 
-        :param list_of_timestamps_and_tweets: A list of tuples consisting 
+        Make each tweet a key in tweeted_times, associate with each key is
+        the timestamp of the tweet
+
+        :param list_of_timestamps_and_tweets: A list of tuples consisting
         of a timestamp and a tweet.
         """
         for timestamp, tweet in list_of_timestamps_and_tweets:
@@ -67,7 +68,7 @@ class ImprovedTweetIndex:
     def __is_valid_query(self, query):
         """
         If query is Valid, return True if logical operator exist, False otherwise.
-        If query is not Valid, raise Exception. 
+        If query is not Valid, raise Exception.
 
         :param query: the given query string
         """
@@ -78,7 +79,7 @@ class ImprovedTweetIndex:
         not re.search(r"(\!\w+|\w+) ([\|\&]) (\!\w+|\w+)", query):
             errors(query)
         # no: word! or word ! or ! word
-        if re.search(r'\w+\!|\w+ !|! \w+', query): 
+        if re.search(r'\w+\!|\w+ !|! \w+', query):
             errors(query)
         # yes: ( ) must exists if both AND and OR operators are found
         if re.search(r'\&', query) and re.search(r'\|', query) \
@@ -96,17 +97,17 @@ class ImprovedTweetIndex:
 
     def process_queries(self, query):
         """
-        Return the set of operations found in the query string. 
-        Dissect the query string into different operations, 
-        prioritize query with NOT operator, then query in parentheses. 
+        Return the set of operations found in the query string.
+        Dissect the query string into different operations,
+        prioritize query with NOT operator, then query in parentheses.
         Suppose query A & (C | D).
 
         A & operation 0 (for operation 0 = C | D)
         operation 1     (for operation1 = A & operation 0)
 
-        Save each operation as 
-            
-        {op#: [logical operator, query word1, query word2]}. 
+        Save each operation as
+
+        {op#: [logical operator, query word1, query word2]}.
 
         :param query: the given query string
         :return: a dictionary-based set of operations dissected
@@ -126,7 +127,7 @@ class ImprovedTweetIndex:
         while logical_exists:
             # process the NOT operator first
             operation = re.search(r'\!\w+', query)
-            if operation: 
+            if operation:
                 operations["op" + str(op_num)] = ['!', operation[0][1:]]
             # process the query in parenthese as soon as possible
             elif re.search(r"[\(\)]", query):
@@ -158,12 +159,12 @@ class ImprovedTweetIndex:
         """
         Return the sets of tweets associated with the given queries
 
-        :param query: a list represented a dissected section of 
-        the original query, 
+        :param query: a list represented a dissected section of
+        the original query,
         represented as [logical operator, word1, word2]
         :param instructions: the set of all instruction dissected
         from the original query
-        :return: a list of sets of tweets that satisfied each query, 
+        :return: a list of sets of tweets that satisfied each query,
         represented as [logical operator, set1, set2]
         """
         for i in range(1, len(query)):
@@ -180,11 +181,11 @@ class ImprovedTweetIndex:
 
     def search_helper(self, instructions):
         """
-        Return all the tweets that satisfied the conditions in the 
+        Return all the tweets that satisfied the conditions in the
         instructions.
 
         :param instructions: a dictionary all queries
-        :return: a set of tweeted words that satisfied the 
+        :return: a set of tweeted words that satisfied the
         the requirement of the last instructions
         If no such tweet exists, return empty list
         """
@@ -193,7 +194,6 @@ class ImprovedTweetIndex:
         results = set()
         # for each instruction
         for stage in instructions:
-            # print(instructions[stage])
             log_op = instructions[stage][0]
             # find the sets of tweets or instruction associated with
             # the current instruction
@@ -210,18 +210,18 @@ class ImprovedTweetIndex:
 
     def search(self, query):
         """
-        Given a query, for each word in the query, find five 
+        Given a query, for each word in the query, find five
         different tweets with the highest timestamps.
 
         :param query: the given query string
-        :return: a list of ordered by highest timestamp tweets first. 
+        :return: a list of ordered by highest timestamp tweets first.
         If no such tweet exists, returns empty list.
         """
         instructions = self.process_queries(query.lower())
         found_tweets = list(self.search_helper(instructions))
         found_tweets.sort(key = lambda x: self.tweeted_times[x], reverse=True)
-        return found_tweets[:6]
-        
+        return found_tweets[:5] if len(found_tweets) > 5 else found_tweets
+
 if __name__ == "__main__":
     # A full list of tweets is available in data/tweets.csv for your use.
     tweet_csv_filename = "../data/tweets.csv"
